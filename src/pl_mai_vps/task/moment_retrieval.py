@@ -9,6 +9,7 @@ import numpy as np
 from pl_mai_vps.util.class_util import load_class_from_string
 from pl_mai_vps.util.click_util import CLICK_JSON_DICT_TYPE
 from pl_mai_vps.util.metrics import get_closest_threshold_idx
+from pl_mai_vps.util.print_util import print_segment
 
 
 def get_datasets_dir():
@@ -23,19 +24,20 @@ def get_datasets_dir():
 
 @click.command()
 @click.option("--processor", "processor_name", default="baseline.py/BaselineProcessor",
-              help="<file_name>/<processor_class_name>")
+              help="<file_name>/<processor_class_name> relative to src/pl_mai_vps/task/", show_default=True)
 @click.option("--processor-config", "processor_config", type=CLICK_JSON_DICT_TYPE,
-              help='Processor config as JSON or key1=val1,key2=val2')
+              help='Processor config as JSON or key1=val1,key2=val2', show_default=True)
 @click.option("--datasets-dir", "datasets_dir_parameter", default="auto",
-              help="Where to download/retrieve the datasets from")
+              help="Where to download/retrieve the datasets from", show_default=True)
 @click.option("--dataset", "dataset_name", default="charades-STA",
-              help="Which dataset to use")
+              help="Which dataset to use", show_default=True)
 @click.option("--batch-size", default=16,
-              help="Batch size for vLLM, minimum 1")
+              help="Batch size for vLLM, minimum 1", show_default=True)
 @click.option("--vllm-model-name", default="Qwen/Qwen2.5-VL-3B-Instruct",
-              help='vLLM model name to use')
+              help='vLLM model name to use', show_default=True)
 @click.option("--max-model-tokens", "max_model_token_amount", default=16384,
-              help='How many tokens the model is allowed to handle. Increase if more frames are sampled.')
+              help='How many tokens the model is allowed to handle. Increase if more frames are sampled.',
+              show_default=True)
 def run_moment_retrieval(processor_name: str, processor_config: dict[str, Any] | None, datasets_dir_parameter: str,
                          dataset_name: str, batch_size: int, vllm_model_name: str,
                          max_model_token_amount: int):
@@ -46,8 +48,10 @@ def run_moment_retrieval(processor_name: str, processor_config: dict[str, Any] |
 
     print("Using datasets directory:", datasets_dir)
 
+    print_segment("Importing libraries and creating processor")
+
     assert dataset_name == "charades-STA", "Currently only supports 'charades-STA' dataset!"
-    ProcessorClass = load_class_from_string(processor_name)
+    ProcessorClass = load_class_from_string(Path(__file__), processor_name)
     processor = ProcessorClass(**processor_config)
 
     # Locally load packages to speed up loading time of command line interface
@@ -56,19 +60,24 @@ def run_moment_retrieval(processor_name: str, processor_config: dict[str, Any] |
     from pl_mai_vps.task.vllm_model import VLLMModel
     from pl_mai_vps.util.metrics import MomentRetrievalMetrics
 
+    print_segment("Downloading/Loading Charades-STA dataset")
+
     # Download/Load Charades-STA
     train_dataset, validation_dataset, test_dataset = get_or_download_charades_video_moments(datasets_dir)
 
+    print_segment("Initializing vLLM model (downloading if necessary)")
+
+    vllm_model = VLLMModel(vllm_model_name, max_model_token_amount=max_model_token_amount)
+
     # Actually run moment retrieval task on the test dataset
     metrics: MomentRetrievalMetrics = run_moment_retrieval(
-        VLLMModel(vllm_model_name, max_model_token_amount=max_model_token_amount), test_dataset,
+        vllm_model, test_dataset,
         processor,
         MomentRetrievalEvaluator(), batch_size=batch_size
     )
 
-    print("=" * 20)
-    print("Evaluation metrics")
-    print("=" * 20)
+    print_segment("Evaluation metrics")
+
     # print(a)
     print(json.dumps(metrics, sort_keys=True, indent=4))
 
@@ -83,5 +92,9 @@ def run_moment_retrieval(processor_name: str, processor_config: dict[str, Any] |
     print(f"mIoU = {miou:.3f}")
 
 
-if __name__ == '__main__':
+def main():
     run_moment_retrieval()
+
+
+if __name__ == '__main__':
+    main()

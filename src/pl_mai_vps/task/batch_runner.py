@@ -14,6 +14,7 @@ from pl_mai_vps.dataset.charades_dataset import get_or_download_charades_video_m
 from pl_mai_vps.dataset.dataset import Dataset, VideoMoment
 from pl_mai_vps.task.vllm_model import VLLMModel
 from pl_mai_vps.util.metrics import evaluate_moment_retrieval, MomentRetrievalMetrics
+from pl_mai_vps.util.print_util import print_segment
 from pl_mai_vps.util.vllm_util import VLLMPrompt
 
 
@@ -86,11 +87,11 @@ class OpenRequest:
 
 
 def run_moment_retrieval(model: VLLMModel, dataset: Dataset, processor: Processor, evaluator: Evaluator, batch_size=20):
-    print()
-    print("=" * 20)
-    print(f"Running moment retrieval on dataset {dataset.name} with model {model.model_name}")
-    print("=" * 20)
-    print()
+    print_segment([
+        "Running moment retrieval",
+        f"Dataset: {dataset.name}",
+        f"Model: {model.model_name}"
+    ])
 
     # dataset.samples = dataset.samples[0:10]
 

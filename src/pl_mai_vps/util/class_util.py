@@ -2,35 +2,36 @@ import importlib.util
 import importlib
 import sys
 import os
+from pathlib import Path
 
 
-def load_class_from_string(class_path, force_reload=False):
+def load_class_from_string(base_path, class_path, force_reload=False):
     """
     Load a class from a string like 'baseline.py/MyClass'
-    Works on Windows, macOS, and Linux
+    base_path: Path(__file__) or similar - used as reference point
+    class_path: 'filename.py/ClassName' - relative to base_path's parent
     """
     if '/' not in class_path:
         raise ValueError("Format should be 'filename.py/ClassName'")
 
     file_path, class_name = class_path.rsplit('/', 1)
 
-    # Normalize the file path for cross-platform compatibility
-    file_path = os.path.normpath(file_path)
+    # Convert base_path to Path object and get parent directory
+    base_dir = Path(base_path).parent
 
-    # Get absolute path to avoid issues
-    if not os.path.isabs(file_path):
-        file_path = os.path.abspath(file_path)
+    # Resolve the full path relative to base directory
+    full_file_path = (base_dir / file_path).resolve()
 
-    module_name = os.path.splitext(os.path.basename(file_path))[0]
+    module_name = full_file_path.stem
 
     # Check if module is already loaded
     if module_name in sys.modules and not force_reload:
         module = sys.modules[module_name]
     else:
         # Load the module
-        spec = importlib.util.spec_from_file_location(module_name, file_path)
+        spec = importlib.util.spec_from_file_location(module_name, str(full_file_path))
         if spec is None:
-            raise ImportError(f"Could not load spec from {file_path}")
+            raise ImportError(f"Could not load spec from {full_file_path}")
 
         module = importlib.util.module_from_spec(spec)
         sys.modules[module_name] = module
@@ -42,6 +43,6 @@ def load_class_from_string(class_path, force_reload=False):
 
     # Get the class
     if not hasattr(module, class_name):
-        raise AttributeError(f"Class '{class_name}' not found in {file_path}")
+        raise AttributeError(f"Class '{class_name}' not found in {full_file_path}")
 
     return getattr(module, class_name)

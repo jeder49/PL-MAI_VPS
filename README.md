@@ -41,3 +41,24 @@ If the setup is working, the model can correctly answer questions about the imag
 Note: The model (7.1 GB) will be downloaded and stored in `HF_HOME` (or on Linux default `~/.cache/huggingface/hub`).
 This can take some time, depending on download speed.
 
+## Run baseline
+
+First make sure to activate the virtual environment
+
+```bash
+source .venv/bin/activate
+```
+
+then use:
+
+```bash
+python run.py
+```
+
+This, by default, runs the baseline inference
+
+For additional options see:
+
+```bash
+python run.py --help
+```
