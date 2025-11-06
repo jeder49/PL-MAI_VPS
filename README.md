@@ -12,6 +12,8 @@ Install vLLM to run this repo, follow the guide for either:
 - or [CPU](https://docs.vllm.ai/en/latest/getting_started/installation/cpu.html#intelamd-x86) (Intel/AMD x86, ARM
   AArch64, Apple silicon, IBM Z S390X)
 
+Install dependencies in `requirements.txt`
+
 ## Full setup for Linux and CUDA 12.8 GPU
 
 Using [pyenv](https://docs.vllm.ai/en/latest/getting_started/installation/cpu.html#intelamd-x86) for version management,
@@ -23,6 +25,7 @@ source .venv/bin/activate
 pip install --upgrade pip
 
 pip install vllm --extra-index-url https://download.pytorch.org/whl/cu128
+pip install -r requirements.txt
 ```
 
 ## vLLM test

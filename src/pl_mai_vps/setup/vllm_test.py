@@ -43,7 +43,7 @@ conversation = [
 
 print("=" * 20)
 print("Type message and press enter to chat with model ('exit' for quitting the app)")
-print("There are currently two images unicorns in the context")
+print("There are currently two images of unicorns in the context")
 print("=" * 20)
 
 while True:
@@ -67,7 +67,6 @@ while True:
     output = outputs[0]
 
     generated_text = output.outputs[0].text
-    # print(f"Prompt: {prompt!r}, Generated text: {generated_text!r}")
     print("=" * 5)
     print(generated_text)
 
