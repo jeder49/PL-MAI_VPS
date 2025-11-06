@@ -6,8 +6,12 @@ import sys
 from pathlib import Path
 from typing import Any, TypedDict
 
+import numpy as np
+
+from pl_mai_vps.dataset.dataset import VideoMoment, Dataset
 from pl_mai_vps.util.file_util import download_with_verification, json_to_csv_in_memory, save_data_to_file, \
     process_zip_from_url, csv_bytes_to_dict, read_json_file, extract_directory_from_zip
+from pl_mai_vps.util.video_util import write_frame_to_file
 
 CHARADES_480P_VIDEOS_URL = "https://ai2-public-datasets.s3-us-west-2.amazonaws.com/charades/Charades_v1_480.zip"
 CHARADES_ANNOTATIONS_URL = "https://ai2-public-datasets.s3-us-west-2.amazonaws.com/charades/Charades.zip"
@@ -85,15 +89,12 @@ def get_or_download_charades_sta_if_necessary(datasets_dir: Path, delete_existin
     if not sta_train_json.exists() or not sta_test_json.exists():
         download_sta_train_and_test_jsons(sta_train_json, sta_test_json)
 
+    videos_processed_dir = charades_dir / "videos_processed"
+    if videos_processed_dir.exists():
+        print("Warning: Using processed dir, results might vary")
+        videos_dir = videos_processed_dir
+
     return videos_dir, train_json, test_json, sta_train_json, sta_test_json
-
-
-class VideoMoment(TypedDict):
-    video_id: str
-    video_length: float
-    start: float
-    end: float
-    prompt: str
 
 
 def get_video_moments(
@@ -124,8 +125,7 @@ def get_video_moments(
             prompt_list.append({
                 "video_id": key,
                 "video_length": duration,
-                "start": window[0],
-                "end": window[1],
+                "windows": [[window[0], window[1]]],
                 "prompt": prompt
             })
 
@@ -133,7 +133,7 @@ def get_video_moments(
 
 
 def get_or_download_charades_video_moments(datasets_dir: Path, delete_existing: bool = False) -> tuple[
-    Path, list[VideoMoment], list[VideoMoment], list[VideoMoment]]:
+    Dataset, Dataset, Dataset]:
     videos_dir, train_json, test_json, sta_train_json, sta_test_json = get_or_download_charades_sta_if_necessary(
         datasets_dir, delete_existing)
 
@@ -145,8 +145,10 @@ def get_or_download_charades_video_moments(datasets_dir: Path, delete_existing: 
     test_moments_json = charades_chrono_dir / "test.json"
 
     if train_moments_json.exists() and validation_moments_json.exists() and test_moments_json.exists():
-        return videos_dir, read_json_file(train_moments_json), read_json_file(validation_moments_json), read_json_file(
-            test_moments_json)
+        return Dataset("charades-STA-train", read_json_file(train_moments_json), videos_dir, video_file_suffix=".mp4"), \
+            Dataset("charades-STA-validation", read_json_file(validation_moments_json), videos_dir,
+                    video_file_suffix=".mp4"), \
+            Dataset("charades-STA-test", read_json_file(test_moments_json), videos_dir, video_file_suffix=".mp4")
 
     train_df = read_json_file(train_json)
     test_df = read_json_file(test_json)
@@ -175,11 +177,26 @@ def get_or_download_charades_video_moments(datasets_dir: Path, delete_existing: 
 
     # print(len(train_moments), len(validation_moments), len(test_moments))
 
-    return videos_dir, train_moments, validation_moments, test_moments
+    return Dataset("charades-STA-train", train_moments, videos_dir, video_file_suffix=".mp4"), \
+        Dataset("charades-STA-validation", validation_moments, videos_dir, video_file_suffix=".mp4"), \
+        Dataset("charades-STA-test", test_moments, videos_dir, video_file_suffix=".mp4")
 
 
 if __name__ == '__main__':
     assert len(sys.argv) >= 2, "Expected a directory as argument!"
-    d, a, b, c = get_or_download_charades_video_moments(Path(sys.argv[1]), delete_existing=False)
-    print((d / (a[0]["video_id"] + ".mp4")).exists())
-    print(a[2])
+    datasets_dir = Path(sys.argv[1])
+    train_dataset, validation_dataset, test_dataset = get_or_download_charades_video_moments(
+        datasets_dir,
+        delete_existing=False
+    )
+
+    # temp_dir = datasets_dir / "temp"
+    # create_or_replace_dir(temp_dir, delete_existing=True)
+    #
+    # first_sample = train_dataset.samples[1]
+    # print(first_sample)
+    # timestamps = np.linspace(0, first_sample["video_length"], 60).tolist()
+    # video_frames = train_dataset.get_video_frames(first_sample["video_id"], timestamps)
+    #
+    # for idx in range(len(timestamps)):
+    #     write_frame_to_file(video_frames[idx], temp_dir / f"frame_{idx}.jpg")

@@ -87,11 +87,11 @@ def convert_to_old_metrics(new_dict):
 
     miou = new_dict["r1"]["miou"]
 
-    r1_iou_0_5_threshold_idx = np.argmin(np.abs(r1_iou_thresholds - 0.5))
-    r1_iou_0_7_threshold_idx = np.argmin(np.abs(r1_iou_thresholds - 0.7))
+    r1_iou_0_5_threshold_idx = np.argmin(np.abs(np.asarray(r1_iou_thresholds) - 0.5))
+    r1_iou_0_7_threshold_idx = np.argmin(np.abs(np.asarray(r1_iou_thresholds) - 0.7))
 
-    map_iou_0_5_threshold_idx = np.argmin(np.abs(map_iou_thresholds - 0.5))
-    map_iou_0_75_threshold_idx = np.argmin(np.abs(map_iou_thresholds - 0.75))
+    map_iou_0_5_threshold_idx = np.argmin(np.abs(np.asarray(map_iou_thresholds) - 0.5))
+    map_iou_0_75_threshold_idx = np.argmin(np.abs(np.asarray(map_iou_thresholds) - 0.75))
 
     full_mr_map = {f"{t:.2f}".removesuffix("0"): r for (t, r) in zip(map_iou_thresholds, map_thresholded)}
     full_mr_map["average"] = overall_map

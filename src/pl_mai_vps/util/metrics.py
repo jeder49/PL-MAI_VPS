@@ -1,10 +1,33 @@
-from typing import Collection
+from typing import Collection, TypedDict
 
 import numpy as np
 from numpy.typing import NDArray
 
 
-def evaluate_moment_retrieval(predicted_windows: list[NDArray], ground_truth_windows: list[NDArray]):
+class R1Metrics(TypedDict):
+    iou_thresholds: list[float]
+    values: list[float]
+    average: float
+    miou: float
+
+
+class MapMetrics(TypedDict):
+    iou_thresholds: list[float]
+    values: list[float]
+    average: float
+
+
+class MomentRetrievalMetrics(TypedDict):
+    r1: R1Metrics
+    map: MapMetrics
+
+
+def get_closest_threshold_idx(threshold_value: float, thresholds: list[float]):
+    return np.argmin(np.abs(np.asarray(thresholds) - threshold_value))
+
+
+def evaluate_moment_retrieval(predicted_windows: list[NDArray],
+                              ground_truth_windows: list[NDArray]) -> MomentRetrievalMetrics:
     r1_iou_thresholds, r1_results, r1_average, miou = calculate_r1(predicted_windows, ground_truth_windows)
 
     map_iou_thresholds, map_thresholded, overall_map = calculate_mean_average_precision(predicted_windows,
@@ -12,14 +35,14 @@ def evaluate_moment_retrieval(predicted_windows: list[NDArray], ground_truth_win
 
     return {
         "r1": {
-            "iou_thresholds": r1_iou_thresholds,
-            "values": r1_results,
+            "iou_thresholds": r1_iou_thresholds.tolist(),
+            "values": r1_results.tolist(),
             "average": r1_average,
             "miou": miou
         },
         "map": {
-            "iou_thresholds": map_iou_thresholds,
-            "values": map_thresholded,
+            "iou_thresholds": map_iou_thresholds.tolist(),
+            "values": map_thresholded.tolist(),
             "average": overall_map
         }
     }
@@ -137,7 +160,8 @@ def calculate_precision_and_recall(true_and_false_positives: NDArray, total_item
 
 
 def calculate_mean_average_precision(predicted_windows: list[NDArray], ground_truth_windows: list[NDArray],
-                                     iou_thresholds: Collection[float] = np.linspace(0.5, 0.95, 10)):
+                                     iou_thresholds: Collection[float] = np.linspace(0.5, 0.95, 10)) -> tuple[
+    NDArray, NDArray, float]:
     average_precisions = np.zeros([len(iou_thresholds), len(predicted_windows)])
 
     for i in range(len(predicted_windows)):
@@ -161,7 +185,8 @@ def calculate_mean_average_precision(predicted_windows: list[NDArray], ground_tr
 
 
 def calculate_r1(predicted_windows: list[NDArray], ground_truth_windows: list[NDArray],
-                 iou_thresholds: Collection[float] = np.linspace(0.5, 0.95, 10)):
+                 iou_thresholds: Collection[float] = np.linspace(0.5, 0.95, 10)) -> tuple[
+    NDArray, NDArray, float, float]:
     num_samples = len(predicted_windows)
     assert num_samples == len(
         ground_truth_windows), f"Inconsistent predicted_windows and ground_truth_windows lengths: {len(predicted_windows)} vs {len(ground_truth_windows)}"
