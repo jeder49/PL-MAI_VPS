@@ -1,7 +1,5 @@
 from vllm import LLM
 
-from pl_mai_vps.util.print_util import print_segment
-
 # 50 needs about 14 GB of VRAM
 frame_amount = 50
 # Approximately N images of size + 100 tokens output
@@ -43,10 +41,12 @@ conversation = [
     }
 ]
 
-print_segment([
-    "Type message and press enter to chat with model ('exit' for quitting the app)",
-    "There are currently two images of unicorns in the context"
-])
+print()
+print("=" * 60)
+print("Type message and press enter to chat with model ('exit' for quitting the app)")
+print("There are currently two images of unicorns in the context")
+print("=" * 60)
+print()
 
 while True:
     line = input()

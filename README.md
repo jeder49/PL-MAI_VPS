@@ -30,7 +30,7 @@ pip install -r requirements.txt
 
 ## vLLM test
 
-Running `python src/pl_mai_vps/setup/vllm_test.p` runs the Qwen2.5-VL-3B-Instruct model and starts a console chat
+Running `python src/pl_mai_vps/setup/vllm_test.py` runs the Qwen2.5-VL-3B-Instruct model and starts a console chat
 dialog.
 
 It reserves realistic memory necessary for 50 image frames out of 480p videos and inputs two images of unicorns via
